@@ -1,0 +1,3 @@
+# 排除不格式化的文件
+/public/*.js
+/public/**/*.js

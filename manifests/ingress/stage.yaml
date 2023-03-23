@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: __CI_PROJECT_NAME__
+  namespace: __NAMESPACE__
+  labels:
+    name: __CI_PROJECT_NAME__
+spec:
+  tls:
+    - hosts:
+        - '*.stage.realibox.com'
+      secretName: realibox-stage-com-crt
+  rules:
+    - host: xr.stage.realibox.com
+      http:
+        paths:
+          - path: /__INGRESS_PUBLIC_PATH__
+            backend:
+              serviceName: __CI_PROJECT_NAME__
+              servicePort: __PORT__

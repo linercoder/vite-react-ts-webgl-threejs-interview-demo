@@ -1,0 +1,81 @@
+before_script:
+  - export REGISTRY_IMAGE="${HARBOR}"/ghac/"${CI_PROJECT_NAME}":${CI_COMMIT_REF_NAME//\//-}-$CI_PIPELINE_ID
+variables:
+  PORT: 80
+  GIT_DEPTH: 10
+  GIT_STRATEGY: fetch
+  PUBLIC_PATH: 'operation-admin'
+
+stages:
+  - test
+  - build
+  - kubernetes
+
+test:
+  stage: test
+  script:
+    - echo "Running test"
+  only:
+    - realibox
+    - stage
+    - master
+
+### stage
+image-stage-build:
+  tags:
+    - stage
+  stage: build
+  image: docker:latest
+  variables:
+    DEPLOY_ENV: 'stage'
+    API_SERVER_HOST: 'xr.stage.realibox.com'
+
+  script:
+    - docker login -u "${HARBOR_IMAGE_USER}" -p "${HARBOR_IMAGE_PASSWORD}" "${HARBOR}"
+    - docker build . -t $REGISTRY_IMAGE --build-arg CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA --build-arg DEPLOY_ENV=$DEPLOY_ENV --build-arg API_SERVER_HOST=$API_SERVER_HOST --build-arg PUBLIC_PATH=$PUBLIC_PATH
+    - docker push $REGISTRY_IMAGE
+  only:
+    - stage
+
+deploy-stage-kubectl:
+  tags:
+    - production
+  image: '${KUBECTL_PRODUCTION}'
+  stage: kubernetes
+  variables:
+    NAMESPACE: stage-project
+
+  script:
+    - cd manifests/
+    - sh -x kubernetes.sh
+  only:
+    - stage
+
+### master
+image-master-build:
+  tags:
+    - stage
+  stage: build
+  image: docker:latest
+  variables:
+    DEPLOY_ENV: 'production'
+    API_SERVER_HOST: 'production.realibox.com'
+  script:
+    - docker login -u "${HARBOR_IMAGE_USER}" -p "${HARBOR_IMAGE_PASSWORD}" "${HARBOR}"
+    - docker build . -t $REGISTRY_IMAGE --build-arg CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA --build-arg DEPLOY_ENV=$DEPLOY_ENV --build-arg API_SERVER_HOST=$API_SERVER_HOST --build-arg PUBLIC_PATH=$PUBLIC_PATH
+    - docker push $REGISTRY_IMAGE
+  only:
+    - master
+
+deploy-master-kubectl:
+  tags:
+    - production
+  image: '${KUBECTL_PRODUCTION}'
+  stage: kubernetes
+  variables:
+    NAMESPACE: production-project
+  script:
+    - cd manifests/
+    - sh -x kubernetes.sh
+  only:
+    - master

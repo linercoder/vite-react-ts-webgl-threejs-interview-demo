@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: __CI_PROJECT_NAME__
+  namespace: __NAMESPACE__
+  labels:
+    name: __CI_PROJECT_NAME__
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: __CI_PROJECT_NAME__
+  template:
+    metadata:
+      labels:
+        name: __CI_PROJECT_NAME__
+    spec:
+      imagePullSecrets:
+        - name: acree
+        - name: stage-project-secret
+      containers:
+        - name: __CI_PROJECT_NAME__
+          image: __REGISTRY_IMAGE__
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: __PORT__
+          livenessProbe: # 存活性探测
+            tcpSocket:
+              port: __PORT__
+            initialDelaySeconds: 5 # 容器启动后多久开始探测
+            timeoutSeconds: 2 # 表示容器必须在2s内做出相应反馈给probe，否则视为探测失败
+            periodSeconds: 30 # 探测周期，每30s探测一次
+            successThreshold: 1 # 连续探测1次成功表示成功
+            failureThreshold: 3 # 连续探测3次失败表示失败
+          readinessProbe: # 就绪性探测
+            tcpSocket: # TCP Socket定义
+              port: __PORT__
+            initialDelaySeconds: 10 # 容器启动后多久开始探测
+            timeoutSeconds: 2 # 表示容器必须在2s内做出相应反馈给probe，否则视为探测失败
+            periodSeconds: 30 # 探测周期，每30s探测一次
+            successThreshold: 1 # 连续探测1次成功表示成功
+            failureThreshold: 3 # 连续探测3次失败表示失败

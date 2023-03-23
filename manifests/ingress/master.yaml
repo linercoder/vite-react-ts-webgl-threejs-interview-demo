@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: __CI_PROJECT_NAME__
+  namespace: __NAMESPACE__
+  labels:
+    name: __CI_PROJECT_NAME__
+spec:
+  tls:
+    - hosts:
+        - '*.realibox.com'
+      secretName: realibox-com-crt
+    - hosts:
+        - '*.dfpv.com.cn'
+      secretName: dfpv-com-cn-crt
+  rules:
+    - host: xr.realibox.com
+      http:
+        paths:
+          - path: /__INGRESS_PUBLIC_PATH__
+            backend:
+              serviceName: __CI_PROJECT_NAME__
+              servicePort: __PORT__
+    - host: xr.dfpv.com.cn
+      http:
+        paths:
+          - path: /__INGRESS_PUBLIC_PATH__
+            backend:
+              serviceName: __CI_PROJECT_NAME__
+              servicePort: __PORT__
